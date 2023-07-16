@@ -804,13 +804,6 @@ while True:
         db.close()
         break
 
-# class testlogin(TestCase):
-    # def wronglogin(self):
-    #     result = login()
-    #     self.assert_(result, print("Invalid choice. Please enter 'Yes' or 'No'."))
 
 
 
-
-if __name__ == '__main__':
-    unittest.main()
