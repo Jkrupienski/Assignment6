@@ -5,9 +5,101 @@ import sqlite3
 
 # Import the necessary functions or classes from your module
 from main import login, logout
-from main import instructor
+from main import instructor, student, Admin
 
-class LoginLogoutTestCase(TestCase):
+
+
+
+class LoginTestCase(TestCase):
+    def setUp(self):
+        self.conn = sqlite3.connect(':memory:')  # Create an in-memory SQLite database
+        self.cursor = self.conn.cursor()
+
+        # Create sample tables and insert test data for admin, instructor, and student
+        self.cursor.execute('''
+            CREATE TABLE admin (
+                EMAIL TEXT PRIMARY KEY,
+                ID TEXT,
+                Name TEXT
+            )
+        ''')
+
+        self.cursor.execute('''
+            CREATE TABLE instructor (
+                EMAIL TEXT PRIMARY KEY,
+                ID TEXT,
+                Name TEXT
+            )
+        ''')
+
+        self.cursor.execute('''
+            CREATE TABLE student (
+                EMAIL TEXT PRIMARY KEY,
+                ID TEXT,
+                Name TEXT
+            )
+        ''')
+
+        self.cursor.execute('''
+            INSERT INTO admin VALUES ('admin@example.com', 'admin123', 'Admin User')
+        ''')
+
+        self.cursor.execute('''
+            INSERT INTO instructor VALUES ('instructor@example.com', 'instructor123', 'Instructor User')
+        ''')
+
+        self.cursor.execute('''
+            INSERT INTO student VALUES ('student@example.com', 'student123', 'Student User')
+        ''')
+
+    def tearDown(self):
+        self.conn.close()
+
+    @patch('builtins.input', side_effect=['admin@example.com', 'admin123'])
+    def test_login_admin(self, mock_input):
+        with patch('main.cursor') as mock_cursor:
+            mock_cursor.fetchone.return_value = ('admin@example.com', 'admin123', 'Admin User')
+            with patch('main.print') as mock_print:
+                user = login()
+                self.assertIsInstance(user, Admin)
+                mock_print.assert_called_with("Welcome, Admin!")
+
+    @patch('builtins.input', side_effe\ct=['instructor@example.com', 'instructor123'])
+    def test_login_instructor(self, mock_input):
+        with patch('main.cursor') as mock_cursor:
+            mock_cursor.fetchone.return_value = ('instructor@example.com', 'instructor123', 'Instructor User')
+            with patch('main.print') as mock_print:
+                user = login()
+                self.assertIsInstance(user, instructor)
+                mock_print.assert_called_with("Welcome, Instructor!")
+
+    @patch('builtins.input', side_effect=['student@example.com', 'student123'])
+    def test_login_student(self, mock_input):
+        with patch('main.cursor') as mock_cursor:
+            mock_cursor.fetchone.return_value = ('student@example.com', 'student123', 'Student User')
+            with patch('main.print') as mock_print:
+                user = login()
+                self.assertIsInstance(user, student)
+                mock_print.assert_called_with("Welcome, Student!")
+
+    @patch('builtins.input', side_effect=['invalid@example.com', 'invalid123'])
+    def test_login_incorrect_credentials(self, mock_input):
+        with patch('main.cursor') as mock_cursor:
+            mock_cursor.fetchone.return_value = None
+            with patch('main.print') as mock_print:
+                user = login()
+                self.assertIsNone(user)
+                mock_print.assert_called_with("Incorrect username or password, please try again")
+
+
+
+
+
+
+
+
+
+class LogoutTestCase(TestCase):
     def setUp(self):
         self.conn = sqlite3.connect(':memory:')  # Create an in-memory SQLite database
         self.cursor = self.conn.cursor()
@@ -15,46 +107,6 @@ class LoginLogoutTestCase(TestCase):
 
     def tearDown(self):
         self.conn.close()
-
-    # @patch('builtins.input', side_effect=['admin@example.com', 'admin123'])
-    # def test_login_admin(self, mock_input):
-    #     with patch('main.cursor') as mock_cursor:
-    #         mock_cursor.fetchone.return_value = ('admin@example.com', 'admin123', 'Admin User')
-    #         with patch('main.print') as mock_print:
-    #             user = login()
-    #             self.assertIsNotNone(user)
-    #             mock_print.assert_called_with("Welcome, Admin!")
-    #
-    # @patch('builtins.input', side_effect=['instructor@example.com', 'instructor123'])
-    # def test_login_instructor(self, mock_input):
-    #     with patch('main.cursor') as mock_cursor:
-    #         mock_cursor.fetchone.return_value = ('instructor@example.com', 'instructor123', 'Instructor User')
-    #         with patch('main.print') as mock_print:
-    #             user = login()
-    #             self.assertIsNotNone(user)
-    #             mock_print.assert_called_with("Welcome, Instructor!")
-    #
-    # @patch('builtins.input', side_effect=['student@example.com', 'student123'])
-    # def test_login_student(self, mock_input):
-    #     with patch('main.cursor') as mock_cursor:
-    #         mock_cursor.fetchone.return_value = ('student@example.com', 'student123', 'Student User')
-    #         with patch('main.print') as mock_print:
-    #             user = login()
-    #             self.assertIsNotNone(user)
-    #             mock_print.assert_called_with("Welcome, Student!")
-    #
-    # @patch('builtins.input', side_effect=['invalid@example.com', 'invalid123', 'yes'])
-    # def test_login_incorrect_credentials(self, mock_input):
-    #     with patch('main.cursor') as mock_cursor:
-    #         mock_cursor.fetchone.return_value = None
-    #         with patch('main.print') as mock_print:
-    #             user = login()
-    #             self.assertIsNone(user)
-    #             mock_print.assert_called_with("Incorrect username or password, please try again")
-    #
-
-
-
 
     # Test logout Function
 
@@ -127,10 +179,10 @@ class InstructorTestCase(TestCase):
     def test_search_course_invalid_choice(self):
         with patch('builtins.input', side_effect=['5', 'value']):
             with patch('main.print') as mock_print:
-                self.conn
+                self.cursor
                 inst = instructor('ID123', 'John', 'Doe', 'Instructor', '2020', 'Math', 'instructor@example.com')
                 inst.searchCourse()
-                mock_print.assert_called_with("Invalid column choice.")
+                mock_print.assert_called_with("No results found.")
 
     def test_search_course_no_results(self):
         with patch('builtins.input', side_effect=['1', 'Unknown']):
