@@ -18,65 +18,78 @@ class LoginTestCase(TestCase):
         # Create sample tables and insert test data for admin, instructor, and student
         self.cursor.execute('''
             CREATE TABLE admin (
-                EMAIL TEXT PRIMARY KEY,
                 ID TEXT,
-                Name TEXT
+                First TEXT,
+                Last TEXT,
+                Title TEXT,
+                Office TEXT,
+                EMAIL TEXT PRIMARY KEY
             )
         ''')
 
         self.cursor.execute('''
             CREATE TABLE instructor (
-                EMAIL TEXT PRIMARY KEY,
                 ID TEXT,
-                Name TEXT
+                First TEXT,
+                Last TEXT,
+                Title TEXT,
+                Year TEXT,
+                Dept TEXT,
+                EMAIL TEXT PRIMARY KEY
+                
+                
             )
         ''')
 
         self.cursor.execute('''
             CREATE TABLE student (
-                EMAIL TEXT PRIMARY KEY,
                 ID TEXT,
-                Name TEXT
+                First TEXT,
+                Last TEXT,
+                Year TEXT,
+                Major TEXT,
+                EMAIL TEXT PRIMARY KEY
+                
             )
         ''')
 
         self.cursor.execute('''
-            INSERT INTO admin VALUES ('admin@example.com', 'admin123', 'Admin User')
+            INSERT INTO admin VALUES ('001', 'bob','bobby', 'Admin User', 'somewhere', 'bobbyb')
         ''')
 
         self.cursor.execute('''
-            INSERT INTO instructor VALUES ('instructor@example.com', 'instructor123', 'Instructor User')
+            INSERT INTO instructor VALUES ('002', 'Luke', 'Bassett', 'teacher', '2020', 'math', 'bassettl')
         ''')
 
         self.cursor.execute('''
-            INSERT INTO student VALUES ('student@example.com', 'student123', 'Student User')
+            INSERT INTO student VALUES ('10012', 'Jack', 'Krupienski', '2024', 'CE', 'krupienskij')
         ''')
 
     def tearDown(self):
         self.conn.close()
 
-    @patch('builtins.input', side_effect=['admin@example.com', 'admin123'])
+    @patch('builtins.input', side_effect=['bobbyb', '001'])
     def test_login_admin(self, mock_input):
         with patch('main.cursor') as mock_cursor:
-            mock_cursor.fetchone.return_value = ('admin@example.com', 'admin123', 'Admin User')
+            mock_cursor.fetchone.return_value = ('001', 'bob', 'bobby', 'Admin User', 'somewhere', 'bobbyb')
             with patch('main.print') as mock_print:
                 user = login()
                 self.assertIsInstance(user, Admin)
                 mock_print.assert_called_with("Welcome, Admin!")
 
-    @patch('builtins.input', side_effe\ct=['instructor@example.com', 'instructor123'])
+    @patch('builtins.input', side_effect=['bassettl', '002'])
     def test_login_instructor(self, mock_input):
         with patch('main.cursor') as mock_cursor:
-            mock_cursor.fetchone.return_value = ('instructor@example.com', 'instructor123', 'Instructor User')
+            mock_cursor.fetchone.return_value = ('002', 'Luke', 'Bassett', 'teacher', '2020', 'math', 'bassettl')
             with patch('main.print') as mock_print:
                 user = login()
                 self.assertIsInstance(user, instructor)
                 mock_print.assert_called_with("Welcome, Instructor!")
 
-    @patch('builtins.input', side_effect=['student@example.com', 'student123'])
+    @patch('builtins.input', side_effect=['krupienskij', '10012'])
     def test_login_student(self, mock_input):
         with patch('main.cursor') as mock_cursor:
-            mock_cursor.fetchone.return_value = ('student@example.com', 'student123', 'Student User')
+            mock_cursor.fetchone.return_value = ('10012', 'Jack', 'Krupienski', '2024', 'CE', 'krupienskij')
             with patch('main.print') as mock_print:
                 user = login()
                 self.assertIsInstance(user, student)
@@ -133,6 +146,7 @@ class LogoutTestCase(TestCase):
     def test_logout_invalid_choice_then_login(self, mock_input):
         with patch('main.print') as mock_print:
             with patch('main.login') as mock_login:
+
                 result = logout()
                 self.assertEqual(result, mock_login.return_value)
                 mock_print.assert_called_with("Logging out...")
