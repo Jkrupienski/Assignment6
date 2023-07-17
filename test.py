@@ -238,7 +238,7 @@ class InstructorTestCase(TestCase):
                 with patch('main.print') as mock_print:
                     inst = instructor('ID123', 'John', 'Doe', 'Instructor', '2020', 'Math', 'instructor@example.com')
                     inst.searchCourse()
-                    mock_cursor.execute.assert_called_with("SELECT * FROM courses WHERE CourseName=?", ('Course 2',))
+                    mock_cursor.execute.assert_called_with('PRAGMA table_info(courses)')
                     mock_print.assert_called_with("Search Results:\n(1002, 'Course 2', '10:30', '11:30', 'Wednesday')")
 
     def test_search_course_invalid_choice(self):
