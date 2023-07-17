@@ -1,7 +1,8 @@
 import unittest
-from unittest import TestCase
+from unittest import TestCase, mock
 from unittest.mock import patch
 import sqlite3
+import main
 
 # Import the necessary functions or classes from your module
 from main import login, logout
@@ -95,7 +96,7 @@ class LoginTestCase(TestCase):
                 self.assertIsInstance(user, student)
                 mock_print.assert_called_with("Welcome, Student!")
 
-    @patch('builtins.input', side_effect=['invalid@example.com', 'invalid123'])
+    @patch('builtins.input', side_effect=['invalid', 'invalid123'])
     def test_login_incorrect_credentials(self, mock_input):
         with patch('main.cursor') as mock_cursor:
             mock_cursor.fetchone.return_value = None
@@ -236,15 +237,15 @@ class InstructorTestCase(TestCase):
         with patch('builtins.input', side_effect=['2', 'Course 2']):
             with patch('main.cursor') as mock_cursor:
                 with patch('main.print') as mock_print:
-                    inst = instructor('ID123', 'John', 'Doe', 'Instructor', '2020', 'Math', 'instructor@example.com')
+                    inst = instructor('20012', 'Test', 'Prgm', 'Instructor', '2020', 'Math', 'Doej')
                     inst.searchCourse()
-                    mock_cursor.execute.assert_called_with('PRAGMA table_info(courses)')
+                    mock_cursor.execute.assert_called_with("PRAGMA table_info(courses)")
                     mock_print.assert_called_with("Search Results:\n(1002, 'Course 2', '10:30', '11:30', 'Wednesday')")
 
     def test_search_course_invalid_choice(self):
         with patch('builtins.input', side_effect=['5', 'value']):
             with patch('main.print') as mock_print:
-                inst = instructor('ID123', 'John', 'Doe', 'Instructor', '2020', 'Math', 'instructor@example.com')
+                inst = instructor('20012', 'Test', 'Prgm', 'Instructor', '2020', 'Math', 'Doej')
                 inst.searchCourse()
                 mock_print.assert_called_with("No results found.")
 
@@ -252,13 +253,103 @@ class InstructorTestCase(TestCase):
         with patch('builtins.input', side_effect=['1', 'Unknown']):
             with patch('main.cursor') as mock_cursor:
                 with patch('main.print') as mock_print:
-                    inst = instructor('ID123', 'John', 'Doe', 'Instructor', '2020', 'Math', 'instructor@example.com')
+                    inst = instructor('20012', 'Test', 'Prgm', 'Instructor', '2020', 'Math', 'Doej')
                     inst.searchCourse()
                     mock_cursor.execute.assert_called_with("PRAGMA table_info(courses)")
                     mock_cursor.fetchall.assert_called()
                     mock_print.assert_called_with("No results found.")
 
+class AdminTestCase(TestCase):
+    def setUp(self):
+        self.admin = Admin("30003", "Test", "User", "Admin", "Wentworth", "UserT")
 
+    def test_add_course(self):
+        with mock.patch("main.cursor") as mock_cursor:
+            with mock.patch("builtins.input",
+                            side_effect=["36482", "Testing Courses", "ELEC", "0800-0900",
+                                         "M", "SUMMER", "2023", "3"]):
+                mock_cursor.fetchone.return_value = None
+                self.admin.addRemoveCourse(True)
+                mock_cursor.execute.assert_any_call("SELECT CRN FROM courses WHERE CRN=?", ("36482",))
+                mock_cursor.execute.assert_called_with(
+                    "INSERT INTO courses (CRN, TITLE, DEPT, TIME, DAYS, SEMESTER, YEAR, CREDITS) VALUES (?,?,?,?,?,?,?,?)",
+                    (
+                        "36482", "Testing Courses", "ELEC", "0800-0900", "M", "SUMMER", "2023", "3"
+                    )
+                )
+
+    def test_remove_course(self):
+        with mock.patch("main.cursor") as mock_cursor:
+            with mock.patch("builtins.input") as mock_input:
+                mock_cursor.fetchone.return_value = ("36482",)
+                mock_input.side_effect = ["36482", "Yes"]
+                self.admin.addRemoveCourse(False)
+                mock_cursor.execute.assert_any_call("SELECT CRN FROM courses WHERE CRN=?", ("36482",))
+                mock_cursor.execute.assert_called_with(
+                    "DELETE FROM courses WHERE CRN=?",
+                    ("36482",)
+                )
+                mock_input.assert_any_call("Course CRN: ")
+                mock_input.assert_called_with("Are you sure you want to remove CRN: 36482? (Yes/No): ")
+
+class ScheduleTestCase(unittest.TestCase):
+    def setUp(self):
+        # Set up the test database
+        main.db = main.sqlite3.connect(":memory:")
+        main.cursor = main.db.cursor()
+        main.cursor.execute("""CREATE TABLE IF NOT EXISTS courses (
+                                CRN TEXT,
+                                TITLE TEXT,
+                                DEPT TEXT,
+                                TIME TEXT,
+                                DAYS TEXT,
+                                SEMESTER TEXT,
+                                YEAR TEXT,
+                                CREDITS TEXT
+                            )""")
+
+    def tearDown(self):
+        # Clean up the test database
+        main.cursor.execute("DROP TABLE IF EXISTS courses")
+        main.db.close()
+
+    def test_student_add_drop_course(self):
+        with mock.patch("main.cursor") as mock_cursor:
+            student = main.student('10012', 'Jack', 'Krupienski', '2024', 'CE', 'krupienskij')
+            student.schedule = ["11111", "22222"]
+
+            # Mock the input to simulate user input
+            with mock.patch("builtins.input", side_effect=["33333", "22222"]):
+                student.addDropCourse(True)
+                student.addDropCourse(False)
+
+                # Assert that the cursor executed the SQL SELECT statements to check for course data
+                mock_cursor.execute.assert_any_call("SELECT * FROM courses WHERE CRN=?", ("33333",))
+                mock_cursor.execute.assert_any_call("SELECT * FROM courses WHERE CRN=?", ("22222",))
+
+                # Assert that the course was added and then dropped from the student's schedule
+                self.assertIn("33333", student.schedule)
+                self.assertNotIn("22222", student.schedule)
+                print("Student schedule after adding and dropping courses:", student.schedule)
+
+    def test_instructor_add_drop_course(self):
+        with mock.patch("main.cursor") as mock_cursor:
+            instructor = main.instructor('002', 'Luke', 'Bassett', 'teacher', '2020', 'math', 'bassettl')
+            instructor.schedule = ["11111", "22222"]
+
+            # Mock the input to simulate user input
+            with mock.patch("builtins.input", side_effect=["33333", "22222"]):
+                instructor.addDropCourse(True)
+                instructor.addDropCourse(False)
+
+                # Assert that the cursor executed the SQL SELECT statements to check for course data
+                mock_cursor.execute.assert_any_call("SELECT * FROM courses WHERE CRN=?", ("33333",))
+                mock_cursor.execute.assert_any_call("SELECT * FROM courses WHERE CRN=?", ("22222",))
+
+                # Assert that the course was added and then dropped from the instructor's schedule
+                self.assertIn("33333", instructor.schedule)
+                self.assertNotIn("22222", instructor.schedule)
+                print("Instructor schedule after adding and dropping courses:", instructor.schedule)
 
 if __name__ == '__main__':
     unittest.main()
