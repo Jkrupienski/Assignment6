@@ -106,11 +106,61 @@ class LoginTestCase(TestCase):
 
 
 
+class testprintRoster(TestCase):
+    def setUp(self):
+        self.conn = sqlite3.connect(':memory:')
+        self.cursor = self.conn.cursor()
+
+        self.cursor.execute('''
+                    CREATE TABLE admin (
+                        ID TEXT,
+                        First TEXT,
+                        Last TEXT,
+                        Title TEXT,
+                        Office TEXT,
+                        EMAIL TEXT PRIMARY KEY
+                    )
+                ''')
+
+        self.cursor.execute('''
+                            CREATE TABLE courses (
+                                CRN TEXT,
+                                TITLE TEXT,
+                                DEPT TEXT,
+                                TIME TEXT,
+                                DAYS TEXT,
+                                SEMESTER TEXT,
+                                YEAR TEXT,
+                                CREDITS
+                            )
+                        ''')
+
+        self.cursor.execute(('''
+                    INSERT INTO courses VALUES ('34285', 'ADVANCED DIGITAL CIRCUIT DESIGN','ELEC', '12:30-13:50', 'WF', 'Summer', '2023', '4')
+                '''))
+
+
+
+    def tearDown(self):
+        self.conn.close()
+
+
+    def testPrintall(self):
+        with patch('main.cursor') as mock_cursor:
+            ad = Admin('10012', 'Jack','Krupienski', 'Admin User', 'somewhere', 'krupienskij')
+            #ad.printRoster()
+
+            mock_cursor.fetchall.return_value = ['----- Courses -----']
+        with patch('builtins.print') as mock_print:
+            ad.printRoster()
+            expected_calls = unittest.mock.call[('----- Courses -----')]
+            mock_print.assert_has_calls(expected_calls)
 
 
 
 
 
+####
 
 class LogoutTestCase(TestCase):
     def setUp(self):
@@ -193,7 +243,6 @@ class InstructorTestCase(TestCase):
     def test_search_course_invalid_choice(self):
         with patch('builtins.input', side_effect=['5', 'value']):
             with patch('main.print') as mock_print:
-                self.cursor
                 inst = instructor('ID123', 'John', 'Doe', 'Instructor', '2020', 'Math', 'instructor@example.com')
                 inst.searchCourse()
                 mock_print.assert_called_with("No results found.")

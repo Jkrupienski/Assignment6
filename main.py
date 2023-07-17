@@ -663,7 +663,7 @@ def logout():
         if choice.lower() == "yes":
             print("Exiting the program...")
             db.commit()
-            # db.close()
+            db.close()
             return None
         elif choice.lower() == "no":
             print("Logging out...")
